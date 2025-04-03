@@ -22,3 +22,31 @@ nla12 <- na.omit(nla12)
 nla12 <- pivot_longer(nla12,cols = ntl_result:turb_result,
                       names_to = "analyte", values_to = "result")
 
+nla17 <- nla17 |>
+  mutate(source = "NLA 2017",
+         analyte = tolower(analyte),
+         result = as.numeric(result),
+         date_col = dmy(date_col))
+nla12 <- nla12 |>
+  mutate(source = "NLA 2012",
+         analyte = str_replace(analyte, "_result", ""),
+         date_col = mdy(date_col))
+
+nla_both <- bind_rows(nla17, nla12)
+
+ggplot(nla_both, aes(x = date_col, y = result, color = analyte)) +
+  geom_point() +
+  facet_wrap(source~., scales = "free")
+
+year_analyte_summary <- nla_both |>
+  group_by(source, analyte) |>
+  summarize(mean = mean(result, na.rm = TRUE),
+            sd = sd(result, na.rm = TRUE),
+            n = n()) |>
+  ungroup()
+
+knitr::kable(year_analyte_summary)
+
+write_csv(nla_both, "nla_both.csv")
+write.csv(nla_both, "nla_both_base.csv")
+
